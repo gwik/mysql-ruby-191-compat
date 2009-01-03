@@ -12,6 +12,9 @@
 #ifndef HAVE_RB_STR_SET_LEN
 #define rb_str_set_len(str, length) (RSTRING_LEN(str) = (length))
 #endif
+#ifndef RARRAY_PTR
+#define RARRAY_PTR(ary) RARRAY(ary)->ptr
+#endif
 
 #ifdef HAVE_MYSQL_H
 #include <mysql.h>
@@ -248,7 +251,9 @@ static VALUE real_connect(int argc, VALUE* argv, VALUE klass)
     pp = NILorINT(port);
     s = NILorSTRING(sock);
 
+#if HAVE_RB_THREAD_START_TIMER
     rb_thread_stop_timer();
+#endif
     obj = Data_Make_Struct(klass, struct mysql, 0, free_mysql, myp);
 #if MYSQL_VERSION_ID >= 32200
     mysql_init(&myp->handler);
@@ -259,10 +264,14 @@ static VALUE real_connect(int argc, VALUE* argv, VALUE klass)
     if (mysql_real_connect(&myp->handler, h, u, p, pp, s) == NULL)
 #endif
     {
+#if HAVE_RB_THREAD_START_TIMER
         rb_thread_start_timer();
+#endif
         mysql_raise(&myp->handler);
     }
+#if HAVE_RB_THREAD_START_TIMER
     rb_thread_start_timer();
+#endif
 
     myp->handler.reconnect = 0;
     myp->connection = Qtrue;
@@ -326,12 +335,18 @@ static VALUE real_connect2(int argc, VALUE* argv, VALUE obj)
     pp = NILorINT(port);
     s = NILorSTRING(sock);
 
+#if HAVE_RB_THREAD_START_TIMER
     rb_thread_stop_timer();
+#endif
     if (mysql_real_connect(m, h, u, p, d, pp, s, f) == NULL) {
+#if HAVE_RB_THREAD_START_TIMER
         rb_thread_start_timer();
+#endif
         mysql_raise(m);
     }
+#if HAVE_RB_THREAD_START_TIMER
     rb_thread_start_timer();
+#endif
     m->reconnect = 0;
     GetMysqlStruct(obj)->connection = Qtrue;
 
@@ -1389,12 +1404,12 @@ static VALUE stmt_execute(int argc, VALUE *argv, VALUE obj)
                     s->param.bind[i].buffer = &(s->param.buffer[i]);
                     t.second_part = 0;
                     t.neg = 0;
-                    t.second = FIX2INT(RARRAY(a)->ptr[0]);
-                    t.minute = FIX2INT(RARRAY(a)->ptr[1]);
-                    t.hour = FIX2INT(RARRAY(a)->ptr[2]);
-                    t.day = FIX2INT(RARRAY(a)->ptr[3]);
-                    t.month = FIX2INT(RARRAY(a)->ptr[4]);
-                    t.year = FIX2INT(RARRAY(a)->ptr[5]);
+                    t.second = FIX2INT(RARRAY_PTR(a)[0]);
+                    t.minute = FIX2INT(RARRAY_PTR(a)[1]);
+                    t.hour = FIX2INT(RARRAY_PTR(a)[2]);
+                    t.day = FIX2INT(RARRAY_PTR(a)[3]);
+                    t.month = FIX2INT(RARRAY_PTR(a)[4]);
+                    t.year = FIX2INT(RARRAY_PTR(a)[5]);
                     *(MYSQL_TIME*)&(s->param.buffer[i]) = t;
                 } else if (CLASS_OF(argv[i]) == cMysqlTime) {
                     MYSQL_TIME t;

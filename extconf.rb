@@ -67,4 +67,6 @@ File.open('error_const.h', 'w') do |f|
   end
 end
 
+have_func('rb_thread_start_timer')
+
 create_makefile("mysql")
